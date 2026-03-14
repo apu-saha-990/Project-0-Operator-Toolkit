@@ -1,0 +1,1382 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Crypto Presale Tracker</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;800&display=swap');
+
+  :root {
+    --bg: #0a0a0f;
+    --surface: #12121a;
+    --surface2: #1a1a26;
+    --border: #2a2a3d;
+    --accent: #00ff88;
+    --accent2: #7b61ff;
+    --accent3: #ff6b35;
+    --text: #e8e8f0;
+    --muted: #6b6b8a;
+    --danger: #ff4444;
+    --eth: #627eea;
+    --tron: #ef0027;
+    --doge: #c2a633;
+    --bnb: #f3ba2f;
+    --sol: #9945ff;
+    --matic: #8247e5;
+    --avax: #e84142;
+    --xrp: #00aae4;
+    --btc: #f7931a;
+    --ada: #0033ad;
+    --kas: #49dbc3;
+    --ftm: #1969ff;
+    --trump: #ff0000;
+    --ton: #0098ea;
+    --base: #0052ff;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Syne', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Animated background */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: 
+      radial-gradient(ellipse 80% 50% at 20% 10%, rgba(0,255,136,0.04) 0%, transparent 60%),
+      radial-gradient(ellipse 60% 40% at 80% 80%, rgba(123,97,255,0.05) 0%, transparent 60%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .container {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 40px 24px;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* Header */
+  header {
+    text-align: center;
+    margin-bottom: 48px;
+  }
+
+  .logo-mark {
+    display: inline-block;
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 4px;
+    color: var(--accent);
+    text-transform: uppercase;
+    margin-bottom: 12px;
+    opacity: 0.8;
+  }
+
+  h1 {
+    font-size: clamp(28px, 5vw, 48px);
+    font-weight: 800;
+    line-height: 1.1;
+    background: linear-gradient(135deg, #fff 0%, var(--accent) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 12px;
+  }
+
+  .subtitle {
+    color: var(--muted);
+    font-size: 15px;
+    font-weight: 400;
+  }
+
+  /* Wallet Section */
+  .wallet-section {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 28px;
+    margin-bottom: 24px;
+    transition: border-color 0.2s;
+  }
+  .wallet-section:focus-within {
+    border-color: var(--accent2);
+  }
+
+  .wallet-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+
+  .wallet-icon {
+    width: 40px;
+    height: 40px;
+    background: linear-gradient(135deg, var(--accent2), var(--accent));
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    flex-shrink: 0;
+  }
+
+  .wallet-title {
+    font-size: 18px;
+    font-weight: 600;
+  }
+
+  .wallet-count {
+    margin-left: auto;
+    font-family: 'Space Mono', monospace;
+    font-size: 12px;
+    color: var(--accent);
+    background: rgba(0,255,136,0.1);
+    padding: 4px 10px;
+    border-radius: 20px;
+  }
+
+  .input-row {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+
+  .wallet-name-input {
+    flex: 1;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 16px;
+    color: var(--text);
+    font-family: 'Syne', sans-serif;
+    font-size: 14px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .wallet-name-input:focus { border-color: var(--accent2); }
+  .wallet-name-input::placeholder { color: var(--muted); }
+
+  .hash-input-area {
+    display: flex;
+    gap: 10px;
+  }
+
+  .hash-input {
+    flex: 1;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 16px;
+    color: var(--text);
+    font-family: 'Space Mono', monospace;
+    font-size: 12px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .hash-input:focus { border-color: var(--accent); }
+  .hash-input::placeholder { color: var(--muted); font-family: 'Syne', sans-serif; font-size: 13px; }
+
+  /* Buttons */
+  .btn {
+    padding: 12px 20px;
+    border: none;
+    border-radius: 10px;
+    font-family: 'Syne', sans-serif;
+    font-weight: 600;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .btn-primary {
+    background: var(--accent);
+    color: #0a0a0f;
+  }
+  .btn-primary:hover { background: #00e07a; transform: translateY(-1px); }
+  .btn-primary:active { transform: translateY(0); }
+  .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+  .btn-ghost {
+    background: transparent;
+    color: var(--muted);
+    border: 1px solid var(--border);
+  }
+  .btn-ghost:hover { border-color: var(--accent2); color: var(--accent2); }
+
+  .btn-danger {
+    background: transparent;
+    color: var(--danger);
+    border: 1px solid rgba(255,68,68,0.3);
+    padding: 6px 10px;
+    font-size: 11px;
+  }
+  .btn-danger:hover { background: rgba(255,68,68,0.1); }
+
+  .btn-generate {
+    width: 100%;
+    padding: 18px;
+    font-size: 16px;
+    background: linear-gradient(135deg, var(--accent2), var(--accent));
+    color: white;
+    border-radius: 14px;
+    justify-content: center;
+    letter-spacing: 0.5px;
+  }
+  .btn-generate:hover { opacity: 0.9; transform: translateY(-2px); box-shadow: 0 8px 30px rgba(0,255,136,0.2); }
+
+  .add-wallet-btn {
+    width: 100%;
+    padding: 14px;
+    background: transparent;
+    border: 1px dashed var(--border);
+    color: var(--muted);
+    border-radius: 12px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: 'Syne', sans-serif;
+    margin-bottom: 24px;
+  }
+  .add-wallet-btn:hover { border-color: var(--accent2); color: var(--accent2); background: rgba(123,97,255,0.05); }
+
+  /* Transaction list */
+  .tx-list {
+    margin-top: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .tx-item {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 14px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    animation: slideIn 0.3s ease;
+  }
+
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateY(-8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .chain-badge {
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 10px;
+    font-weight: 700;
+    font-family: 'Space Mono', monospace;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    flex-shrink: 0;
+  }
+  .chain-ethereum { background: rgba(98,126,234,0.2); color: var(--eth); border: 1px solid rgba(98,126,234,0.3); }
+  .chain-tron { background: rgba(239,0,39,0.15); color: var(--tron); border: 1px solid rgba(239,0,39,0.3); }
+  .chain-dogecoin { background: rgba(194,166,51,0.15); color: var(--doge); border: 1px solid rgba(194,166,51,0.3); }
+  .chain-bnb { background: rgba(243,186,47,0.15); color: var(--bnb); border: 1px solid rgba(243,186,47,0.3); }
+  .chain-solana { background: rgba(153,69,255,0.15); color: var(--sol); border: 1px solid rgba(153,69,255,0.3); }
+  .chain-polygon { background: rgba(130,71,229,0.15); color: var(--matic); border: 1px solid rgba(130,71,229,0.3); }
+  .chain-avalanche { background: rgba(232,65,66,0.15); color: var(--avax); border: 1px solid rgba(232,65,66,0.3); }
+  .chain-xrp { background: rgba(0,174,228,0.15); color: var(--xrp); border: 1px solid rgba(0,174,228,0.3); }
+  .chain-bitcoin { background: rgba(247,147,26,0.15); color: var(--btc); border: 1px solid rgba(247,147,26,0.3); }
+  .chain-cardano { background: rgba(0,51,173,0.2); color: var(--ada); border: 1px solid rgba(0,51,173,0.4); }
+  .chain-kaspa { background: rgba(73,219,195,0.15); color: var(--kas); border: 1px solid rgba(73,219,195,0.3); }
+  .chain-fantom { background: rgba(25,105,255,0.15); color: var(--ftm); border: 1px solid rgba(25,105,255,0.3); }
+  .chain-trump { background: rgba(255,0,0,0.12); color: var(--trump); border: 1px solid rgba(255,0,0,0.3); }
+  .chain-ton { background: rgba(0,152,234,0.15); color: var(--ton); border: 1px solid rgba(0,152,234,0.3); }
+  .chain-base { background: rgba(0,82,255,0.15); color: var(--base); border: 1px solid rgba(0,82,255,0.3); }
+  .chain-unknown { background: rgba(107,107,138,0.15); color: var(--muted); border: 1px solid rgba(107,107,138,0.3); }
+
+  .tx-hash {
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .tx-info {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-shrink: 0;
+  }
+
+  .tx-date {
+    font-size: 12px;
+    color: var(--muted);
+    font-family: 'Space Mono', monospace;
+  }
+
+  .tx-amount {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--accent);
+    font-family: 'Space Mono', monospace;
+  }
+
+  .tx-usd {
+    font-size: 12px;
+    color: var(--muted);
+    font-family: 'Space Mono', monospace;
+  }
+
+  .tx-token {
+    font-size: 11px;
+    color: var(--text);
+    background: var(--surface);
+    padding: 2px 8px;
+    border-radius: 6px;
+  }
+
+  /* Status / loading */
+  .status-bar {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 16px;
+    font-size: 12px;
+    font-family: 'Space Mono', monospace;
+    color: var(--muted);
+    margin-top: 10px;
+    display: none;
+    align-items: center;
+    gap: 8px;
+  }
+  .status-bar.visible { display: flex; }
+  .status-bar.loading { color: var(--accent2); border-color: rgba(123,97,255,0.3); }
+  .status-bar.success { color: var(--accent); border-color: rgba(0,255,136,0.3); }
+  .status-bar.error { color: var(--danger); border-color: rgba(255,68,68,0.3); }
+
+  .spinner {
+    width: 14px;
+    height: 14px;
+    border: 2px solid rgba(123,97,255,0.3);
+    border-top-color: var(--accent2);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    flex-shrink: 0;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Manual entry form */
+  .manual-form {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+    margin-top: 10px;
+    display: none;
+  }
+  .manual-form.visible { display: block; }
+  .manual-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+  @media (max-width: 600px) { .manual-grid { grid-template-columns: 1fr 1fr; } }
+  .manual-input {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 12px;
+    color: var(--text);
+    font-size: 13px;
+    font-family: 'Syne', sans-serif;
+    outline: none;
+    width: 100%;
+    transition: border-color 0.2s;
+  }
+  .manual-input:focus { border-color: var(--accent); }
+  .manual-label {
+    font-size: 11px;
+    color: var(--muted);
+    margin-bottom: 4px;
+    display: block;
+    font-family: 'Space Mono', monospace;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  /* Stats bar */
+  .stats-bar {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px;
+    text-align: center;
+  }
+
+  .stat-value {
+    font-size: 22px;
+    font-weight: 800;
+    color: var(--accent);
+    font-family: 'Space Mono', monospace;
+    display: block;
+    margin-bottom: 4px;
+  }
+
+  .stat-label {
+    font-size: 11px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-family: 'Space Mono', monospace;
+  }
+
+  /* Divider */
+  .section-label {
+    font-size: 11px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 3px;
+    font-family: 'Space Mono', monospace;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .section-label::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  .generate-section {
+    margin-top: 32px;
+  }
+
+  /* Chain detect row */
+  .chain-detect-row {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-top: 8px;
+  }
+  .chain-hint {
+    font-size: 10px;
+    color: var(--muted);
+    font-family: 'Space Mono', monospace;
+    background: var(--surface2);
+    padding: 3px 8px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+  }
+
+  .manual-toggle {
+    font-size: 12px;
+    color: var(--accent2);
+    cursor: pointer;
+    text-decoration: underline;
+    margin-top: 6px;
+    display: inline-block;
+    font-family: 'Space Mono', monospace;
+  }
+
+  footer {
+    text-align: center;
+    margin-top: 48px;
+    color: var(--muted);
+    font-size: 12px;
+    font-family: 'Space Mono', monospace;
+  }
+
+  .clear-all-btn {
+    font-size: 11px;
+    color: var(--danger);
+    cursor: pointer;
+    font-family: 'Space Mono', monospace;
+    background: none;
+    border: none;
+    text-decoration: underline;
+    margin-top: 8px;
+  }
+
+  /* Lock / Remove wallet controls */
+  .wallet-controls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-left: auto;
+    flex-shrink: 0;
+  }
+
+  .btn-lock {
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 5px 10px;
+    cursor: pointer;
+    font-size: 15px;
+    line-height: 1;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    color: var(--muted);
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+  }
+  .btn-lock:hover { border-color: var(--accent2); color: var(--accent2); }
+  .btn-lock.locked { border-color: rgba(0,255,136,0.4); color: var(--accent); background: rgba(0,255,136,0.07); }
+  .btn-lock.locked:hover { background: rgba(0,255,136,0.12); }
+
+  .btn-remove-wallet {
+    background: transparent;
+    border: 1px solid rgba(255,68,68,0.25);
+    border-radius: 8px;
+    padding: 5px 9px;
+    cursor: pointer;
+    font-size: 13px;
+    line-height: 1;
+    color: rgba(255,68,68,0.5);
+    transition: all 0.2s;
+  }
+  .btn-remove-wallet:hover { border-color: var(--danger); color: var(--danger); background: rgba(255,68,68,0.08); }
+
+  /* Collapsed wallet state */
+  .wallet-section.locked-wallet {
+    border-color: rgba(0,255,136,0.2);
+    background: rgba(18,18,26,0.7);
+  }
+  .wallet-body {
+    transition: all 0.25s ease;
+  }
+  .wallet-body.collapsed {
+    display: none;
+  }
+  .wallet-locked-summary {
+    display: none;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 0 2px 0;
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+  }
+  .wallet-locked-summary.visible { display: flex; }
+  .wallet-locked-summary .summary-txns {
+    background: rgba(0,255,136,0.08);
+    color: var(--accent);
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-weight: 700;
+  }
+  .wallet-locked-summary .summary-usd {
+    color: var(--accent);
+    font-weight: 700;
+    font-size: 13px;
+  }
+
+  /* Per-wallet export button */
+  .btn-export-wallet {
+    background: transparent;
+    border: 1px solid rgba(123,97,255,0.3);
+    border-radius: 8px;
+    padding: 5px 10px;
+    cursor: pointer;
+    font-size: 10px;
+    color: var(--accent2);
+    font-family: 'Space Mono', monospace;
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+  .btn-export-wallet:hover { background: rgba(123,97,255,0.1); border-color: var(--accent2); }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <header>
+    <div class="logo-mark">⬡ Presale Tracker</div>
+    <h1>Crypto Transaction<br>Record Keeper</h1>
+    <p class="subtitle">Paste any transaction hash or link — auto-detects chain, parses all data, exports to Excel</p>
+  </header>
+
+  <!-- Stats bar -->
+  <div class="stats-bar" id="statsBar">
+    <div class="stat-card">
+      <span class="stat-value" id="statTxCount">0</span>
+      <span class="stat-label">Transactions</span>
+    </div>
+    <div class="stat-card">
+      <span class="stat-value" id="statWallets">0</span>
+      <span class="stat-label">Wallets</span>
+    </div>
+    <div class="stat-card">
+      <span class="stat-value" id="statUSD">$0</span>
+      <span class="stat-label">Total USD</span>
+    </div>
+    <div class="stat-card">
+      <span class="stat-value" id="statChains">0</span>
+      <span class="stat-label">Chains</span>
+    </div>
+  </div>
+
+  <!-- Wallets container -->
+  <div class="section-label">Wallets</div>
+  <div id="walletsContainer"></div>
+
+  <button class="add-wallet-btn" onclick="addWallet()">+ Add Another Wallet</button>
+
+  <!-- Generate section -->
+  <div class="generate-section">
+    <div class="section-label">Export</div>
+    <button class="btn btn-generate" onclick="generateExcel()">
+      ⬇ Generate Excel Report
+    </button>
+    <div style="text-align:center; margin-top:12px;">
+      <button class="clear-all-btn" onclick="clearAll()">Clear all data</button>
+    </div>
+  </div>
+
+  <footer>
+    <p>All data stored locally in your browser · No server · No tracking</p>
+    <p style="margin-top:8px; font-size:13px; color:var(--accent); font-family:'Space Mono',monospace; letter-spacing:2px;">Made by ArtX</p>
+  </footer>
+</div>
+
+<script>
+// ============================================================
+// DATA STORE (localStorage)
+// ============================================================
+let wallets = [];
+
+function save() {
+  localStorage.setItem('cpTracker', JSON.stringify(wallets));
+}
+
+function load() {
+  const stored = localStorage.getItem('cpTracker');
+  if (stored) {
+    wallets = JSON.parse(stored);
+    // Deduplicate: keep unique ids only
+    const seen = new Set();
+    wallets = wallets.filter(w => { if (seen.has(w.id)) return false; seen.add(w.id); return true; });
+    wallets.forEach(w => renderWallet(w));
+    walletCount = wallets.length;
+  }
+  if (wallets.length === 0) addWallet(false);
+}
+
+// ============================================================
+// CHAIN DETECTION
+// ============================================================
+function detectChain(input) {
+  input = input.trim();
+
+  // From full URLs
+  if (input.includes('etherscan.io') && !input.includes('basescan')) return 'Ethereum';
+  if (input.includes('tronscan.org')) return 'Tron';
+  if (input.includes('blockchair.com/dogecoin')) return 'Dogecoin';
+  if (input.includes('blockchair.com/bitcoin') || input.includes('blockchain.com/btc') || input.includes('mempool.space')) return 'Bitcoin';
+  if (input.includes('bscscan.com')) return 'BNB';
+  if (input.includes('solscan.io') || input.includes('explorer.solana.com')) return 'Solana';
+  if (input.includes('polygonscan.com')) return 'Polygon';
+  if (input.includes('snowtrace.io') || input.includes('avascan.info')) return 'Avalanche';
+  if (input.includes('arbiscan.io')) return 'Arbitrum';
+  if (input.includes('optimistic.etherscan.io') || input.includes('optimism.io')) return 'Optimism';
+  if (input.includes('basescan.org') || input.includes('base.org')) return 'Base';
+  if (input.includes('xrpscan.com') || input.includes('livenet.xrpl.org') || input.includes('bithomp.com')) return 'XRP';
+  if (input.includes('cardanoscan.io') || input.includes('cexplorer.io') || input.includes('pool.pm')) return 'Cardano';
+  if (input.includes('kas.fyi') || input.includes('explorer.kaspa.org')) return 'Kaspa';
+  if (input.includes('ftmscan.com') || input.includes('explorer.fantom.network') || input.includes('sonicscan.org')) return 'Fantom';
+  if (input.includes('tonscan.org') || input.includes('tonviewer.com') || input.includes('explorer.toncoin.org')) return 'TON';
+  if (input.includes('dexscreener.com') && input.includes('trump')) return 'TRUMP';
+
+  // Extract raw hash
+  const hash = extractHash(input);
+  if (!hash) return 'Unknown';
+
+  // Bitcoin: 64 hex, no 0x prefix
+  if (/^[a-fA-F0-9]{64}$/.test(hash)) {
+    // Could be BTC, Tron, Doge, Kaspa, KAS — flag as ambiguous but default Tron for now
+    return 'Tron';
+  }
+
+  // Ethereum / EVM: 0x + 64 hex
+  if (/^0x[a-fA-F0-9]{64}$/.test(hash)) return 'Ethereum';
+
+  // Solana: base58 44-88 chars
+  if (/^[1-9A-HJ-NP-Za-km-z]{44,88}$/.test(hash)) return 'Solana';
+
+  // XRP: starts with a number, ~64 hex
+  if (/^[A-F0-9]{64}$/.test(hash)) return 'XRP';
+
+  // Cardano: starts with specific patterns
+  if (/^[a-f0-9]{63,64}$/.test(hash)) return 'Cardano';
+
+  return 'Unknown';
+}
+
+function extractHash(input) {
+  input = input.trim();
+  // Extract from URL
+  const urlMatch = input.match(/\/tx\/([a-fA-F0-9x]{10,})/i) ||
+                   input.match(/#\/transaction\/([a-fA-F0-9]{64})/i) ||
+                   input.match(/\/transaction\/([a-zA-Z0-9]{44,})/i);
+  if (urlMatch) return urlMatch[1];
+  // Raw hash
+  if (/^0x[a-fA-F0-9]{64}$/.test(input)) return input;
+  if (/^[a-fA-F0-9]{64}$/.test(input)) return input;
+  if (/^[1-9A-HJ-NP-Za-km-z]{44,88}$/.test(input)) return input;
+  return input;
+}
+
+function explorerUrl(hash, chain) {
+  const h = extractHash(hash);
+  switch(chain) {
+    case 'Ethereum':   return `https://etherscan.io/tx/${h}`;
+    case 'Arbitrum':   return `https://arbiscan.io/tx/${h}`;
+    case 'Optimism':   return `https://optimistic.etherscan.io/tx/${h}`;
+    case 'Base':       return `https://basescan.org/tx/${h}`;
+    case 'BNB':        return `https://bscscan.com/tx/${h}`;
+    case 'Polygon':    return `https://polygonscan.com/tx/${h}`;
+    case 'Avalanche':  return `https://snowtrace.io/tx/${h}`;
+    case 'Fantom':     return `https://ftmscan.com/tx/${h}`;
+    case 'Tron':       return `https://tronscan.org/#/transaction/${h}`;
+    case 'Dogecoin':   return `https://blockchair.com/dogecoin/transaction/${h}`;
+    case 'Bitcoin':    return `https://mempool.space/tx/${h}`;
+    case 'Solana':     return `https://solscan.io/tx/${h}`;
+    case 'XRP':        return `https://xrpscan.com/tx/${h}`;
+    case 'Cardano':    return `https://cardanoscan.io/transaction/${h}`;
+    case 'Kaspa':      return `https://kas.fyi/transaction/${h}`;
+    case 'TON':        return `https://tonscan.org/tx/${h}`;
+    case 'TRUMP':      return `https://solscan.io/tx/${h}`;
+    default:           return '#';
+  }
+}
+
+// ============================================================
+// FETCH TRANSACTION DATA (Ethereum via public APIs)
+// ============================================================
+async function fetchEthTx(hash) {
+  const h = extractHash(hash);
+  // Use Etherscan public API (no key needed for basic tx lookup, limited)
+  // Fallback: try multiple public endpoints
+  try {
+    // Try public eth node
+    const res = await fetch(`https://api.etherscan.io/api?module=proxy&action=eth_getTransactionByHash&txhash=${h}&apikey=YourApiKeyToken`);
+    const data = await res.json();
+    if (data.result) {
+      const tx = data.result;
+      const block = parseInt(tx.blockNumber, 16);
+      return { hash: h, block };
+    }
+  } catch(e) {}
+  return null;
+}
+
+// ============================================================
+// WALLET UI
+// ============================================================
+let walletCount = 0;
+
+function addWallet(persist = true) {
+  walletCount++;
+  const id = 'wallet_' + Date.now();
+  const walletData = { id, name: `Wallet ${walletCount}`, address: '', transactions: [] };
+  wallets.push(walletData);
+  renderWallet(walletData);
+  if (persist) save();
+  updateStats();
+}
+
+function renderWallet(walletData) {
+  const container = document.getElementById('walletsContainer');
+  const div = document.createElement('div');
+  div.className = 'wallet-section';
+  div.id = 'ws_' + walletData.id;
+
+  div.innerHTML = `
+    <div class="wallet-header">
+      <div class="wallet-icon">🔑</div>
+      <input class="wallet-name-input" placeholder="Wallet name (e.g. Big Double)" 
+        value="${walletData.name}" 
+        onchange="renameWallet('${walletData.id}', this.value)"
+        style="background:transparent;border:none;font-size:18px;font-weight:600;color:var(--text);outline:none;font-family:'Syne',sans-serif;flex:1;">
+      <div class="wallet-controls">
+        <span class="wallet-count" id="wc_${walletData.id}">0 txns</span>
+        <button class="btn-export-wallet" onclick="exportWallet('${walletData.id}')" title="Export this wallet to Excel">⬇ Export</button>
+        <button class="btn-lock ${walletData.locked ? 'locked' : ''}" id="lockbtn_${walletData.id}" onclick="toggleLock('${walletData.id}')" title="${walletData.locked ? 'Unlock to edit' : 'Lock wallet (done editing)'}">
+          ${walletData.locked ? '🔒 Locked' : '🔓 Editing'}
+        </button>
+        <button class="btn-remove-wallet" onclick="removeWallet('${walletData.id}')" title="Remove this wallet">✕</button>
+      </div>
+    </div>
+
+    <!-- Locked summary (shown when collapsed) -->
+    <div class="wallet-locked-summary ${walletData.locked ? 'visible' : ''}" id="locksummary_${walletData.id}">
+      <span class="summary-txns" id="ls_txns_${walletData.id}">0 txns</span>
+      <span>·</span>
+      <span class="summary-usd" id="ls_usd_${walletData.id}">$0 spent</span>
+      <span style="color:var(--muted);font-size:10px;margin-left:4px;">— click 🔓 to edit</span>
+    </div>
+
+    <!-- Collapsible body -->
+    <div class="wallet-body ${walletData.locked ? 'collapsed' : ''}" id="wbody_${walletData.id}">
+
+      <div style="margin-bottom:16px; margin-top:4px;">
+        <div id="wa_display_${walletData.id}" style="
+          font-family:'Space Mono',monospace;
+          font-size:11px;
+          font-weight:600;
+          color:var(--muted);
+          letter-spacing:1px;
+          margin-bottom:5px;
+          display:${walletData.address ? 'block' : 'none'};
+        ">
+          <span style="color:var(--accent2); opacity:0.7; font-size:10px; letter-spacing:2px; text-transform:uppercase;">Wallet Address</span><br>
+          <span id="wa_label_${walletData.id}" style="color:var(--text); font-size:12px; word-break:break-all;">${walletData.address || ''}</span>
+        </div>
+        <input class="hash-input" id="wa_${walletData.id}"
+          placeholder="Paste your wallet address (e.g. 0x1a2b3c... or TRxxxxxxx)"
+          value="${walletData.address || ''}"
+          oninput="updateWalletAddress('${walletData.id}', this.value)"
+          style="font-family:'Space Mono',monospace; font-size:11px; opacity:0.6;">
+      </div>
+
+      <div class="hash-input-area">
+        <input class="hash-input" id="hi_${walletData.id}" 
+          placeholder="Paste transaction hash or full explorer URL (any chain)..."
+          onkeydown="if(event.key==='Enter') addTransaction('${walletData.id}')">
+        <button class="btn btn-primary" onclick="addTransaction('${walletData.id}')">
+          ➕ Add
+        </button>
+        <button class="btn btn-ghost" onclick="toggleManual('${walletData.id}')">
+          ✏ Manual
+        </button>
+      </div>
+
+      <div class="chain-detect-row">
+        <span class="chain-hint">auto-detects: ETH · TRX · DOGE · BNB · SOL · MATIC · AVAX · XRP · BTC · ADA · KAS · FTM · TON · BASE · TRUMP</span>
+      </div>
+
+      <div class="status-bar" id="sb_${walletData.id}"></div>
+      <div id="hd_${walletData.id}" style="display:none; margin:8px 0 4px 0; font-family:'Space Mono',monospace; font-size:12px; font-weight:700; color:var(--accent); word-break:break-all; padding:8px 12px; background:rgba(0,255,136,0.06); border-left:3px solid var(--accent); border-radius:4px;"></div>
+
+      <!-- Manual entry form -->
+      <div class="manual-form" id="mf_${walletData.id}">
+        <div class="manual-grid">
+          <div>
+            <label class="manual-label">Chain</label>
+            <select class="manual-input" id="m_chain_${walletData.id}" onchange="toggleOtherChain('${walletData.id}', this.value)">
+              <option>Ethereum</option><option>Tron</option><option>Dogecoin</option>
+              <option>Bitcoin</option><option>XRP</option><option>Cardano</option>
+              <option>Kaspa</option><option>Fantom</option><option>TON</option>
+              <option>Base</option><option>TRUMP</option><option>Solana</option>
+              <option>BNB</option><option>Polygon</option><option>Avalanche</option>
+              <option>Arbitrum</option><option>Optimism</option>
+              <option>Other</option>
+            </select>
+            <input class="manual-input" id="m_chain_other_${walletData.id}" 
+              placeholder="Enter chain name..." 
+              style="display:none; margin-top:6px;">
+          </div>
+          <div>
+            <label class="manual-label">Date</label>
+            <input class="manual-input" id="m_date_${walletData.id}" type="date">
+          </div>
+          <div id="m_token_wrap_${walletData.id}" style="display:none;">
+            <label class="manual-label">Token <span style="font-size:10px;opacity:0.6;">(optional — for Other chain)</span></label>
+            <input class="manual-input" id="m_token_${walletData.id}" placeholder="e.g. USDT / ETH / DOGE">
+          </div>
+          <div>
+            <label class="manual-label">USD Value</label>
+            <input class="manual-input" id="m_usd_${walletData.id}" type="number" step="any" placeholder="0.00"
+              onkeydown="if(event.key==='Enter') addManual('${walletData.id}')">
+          </div>
+          <div>
+            <label class="manual-label">Notes</label>
+            <input class="manual-input" id="m_notes_${walletData.id}" placeholder="optional note">
+          </div>
+        </div>
+        <button class="btn btn-primary" onclick="addManual('${walletData.id}')">+ Add Manual Entry</button>
+      </div>
+
+      <div class="tx-list" id="tl_${walletData.id}"></div>
+    </div>
+  `;
+
+  container.appendChild(div);
+
+  // Re-render existing txns
+  walletData.transactions.forEach(tx => renderTxItem(walletData.id, tx));
+  updateWalletCount(walletData.id, walletData.transactions.length);
+}
+
+function renameWallet(wid, name) {
+  const w = wallets.find(w => w.id === wid);
+  if (w) { w.name = name; save(); }
+}
+
+function updateWalletAddress(wid, address) {
+  const w = wallets.find(w => w.id === wid);
+  if (w) { w.address = address.trim(); save(); }
+  const display = document.getElementById('wa_display_' + wid);
+  const label = document.getElementById('wa_label_' + wid);
+  if (display && label) {
+    label.textContent = address.trim();
+    display.style.display = address.trim() ? 'block' : 'none';
+  }
+}
+
+function toggleLock(wid) {
+  const w = wallets.find(w => w.id === wid);
+  if (!w) return;
+  w.locked = !w.locked;
+  save();
+
+  const btn = document.getElementById('lockbtn_' + wid);
+  const body = document.getElementById('wbody_' + wid);
+  const summary = document.getElementById('locksummary_' + wid);
+  const section = document.getElementById('ws_' + wid);
+
+  if (w.locked) {
+    btn.textContent = '🔒 Locked';
+    btn.classList.add('locked');
+    btn.title = 'Unlock to edit';
+    body.classList.add('collapsed');
+    summary.classList.add('visible');
+    section.classList.add('locked-wallet');
+    updateLockSummary(wid);
+  } else {
+    btn.textContent = '🔓 Editing';
+    btn.classList.remove('locked');
+    btn.title = 'Lock wallet (done editing)';
+    body.classList.remove('collapsed');
+    summary.classList.remove('visible');
+    section.classList.remove('locked-wallet');
+  }
+}
+
+function updateLockSummary(wid) {
+  const w = wallets.find(w => w.id === wid);
+  if (!w) return;
+  const txns = w.transactions.length;
+  const usd = w.transactions.reduce((s, t) => s + (t.usd || 0), 0);
+  const txEl = document.getElementById('ls_txns_' + wid);
+  const usdEl = document.getElementById('ls_usd_' + wid);
+  if (txEl) txEl.textContent = txns + ' txn' + (txns !== 1 ? 's' : '');
+  if (usdEl) usdEl.textContent = '$' + usd.toLocaleString(undefined, {maximumFractionDigits: 2}) + ' spent';
+}
+
+function removeWallet(wid) {
+  const w = wallets.find(w => w.id === wid);
+  const name = w ? w.name : 'this wallet';
+  if (!confirm(`Remove "${name}"? All transactions will be deleted. This cannot be undone.`)) return;
+  wallets = wallets.filter(w => w.id !== wid);
+  save();
+  const el = document.getElementById('ws_' + wid);
+  if (el) el.remove();
+  updateStats();
+}
+
+function exportWallet(wid) {
+  const w = wallets.find(w => w.id === wid);
+  if (!w || w.transactions.length === 0) {
+    alert('No transactions in this wallet to export.');
+    return;
+  }
+  const wb = XLSX.utils.book_new();
+  buildWalletSheet(wb, w, 0);
+  const date = new Date().toISOString().slice(0, 10);
+  const safeName = (w.name || 'wallet').replace(/[^a-z0-9]/gi, '_').toLowerCase();
+  XLSX.writeFile(wb, `${safeName}_${date}.xlsx`);
+}
+
+function toggleOtherChain(wid, value) {
+  const otherInput = document.getElementById('m_chain_other_' + wid);
+  const tokenWrap = document.getElementById('m_token_wrap_' + wid);
+  const isOther = value === 'Other';
+  if (otherInput) otherInput.style.display = isOther ? 'block' : 'none';
+  if (tokenWrap) tokenWrap.style.display = isOther ? 'block' : 'none';
+}
+
+function toggleManual(wid) {
+  const mf = document.getElementById('mf_' + wid);
+  mf.classList.toggle('visible');
+}
+
+// Stores the pending hash per wallet (set when user pastes, consumed on addManual)
+const pendingHashes = {};
+const pendingUrls = {};
+
+// ============================================================
+// ADD TRANSACTION
+// ============================================================
+async function addTransaction(wid) {
+  const input = document.getElementById('hi_' + wid).value.trim();
+  if (!input) return;
+
+  const sb = document.getElementById('sb_' + wid);
+  const hd = document.getElementById('hd_' + wid);
+
+  const chain = detectChain(input);
+  const hash = extractHash(input);
+  const url = input.startsWith('http') ? input : explorerUrl(hash, chain);
+
+  // ---- Duplicate check across ALL wallets ----
+  const allTx = wallets.flatMap(w => w.transactions);
+  const isDuplicate = allTx.some(tx => {
+    const txHash = extractHash(tx.hash || '');
+    return txHash && txHash.toLowerCase() === hash.toLowerCase();
+  });
+
+  if (isDuplicate) {
+    setStatus(sb, 'error', '⚠ This transaction has already been logged. Duplicate not added.');
+    hd.style.display = 'none';
+    document.getElementById('hi_' + wid).value = '';
+    return;
+  }
+
+  // ---- Store pending hash for this wallet ----
+  pendingHashes[wid] = hash;
+  pendingUrls[wid] = url;
+
+  // ---- Show hash in bold green display ----
+  hd.style.display = 'block';
+  hd.innerHTML = `🔗 ${hash}`;
+
+  // ---- Open form with chain pre-filled ----
+  setStatus(sb, 'success', `✓ Chain detected: <strong>${chain}</strong> — fill in the details below.`);
+  const mf = document.getElementById('mf_' + wid);
+  mf.classList.add('visible');
+
+  const chainSelect = document.getElementById('m_chain_' + wid);
+  // Check if chain is in the dropdown options
+  const options = Array.from(chainSelect.options).map(o => o.value);
+  if (options.includes(chain)) {
+    chainSelect.value = chain;
+    toggleOtherChain(wid, chain);
+  } else {
+    chainSelect.value = 'Other';
+    toggleOtherChain(wid, 'Other');
+    const otherInput = document.getElementById('m_chain_other_' + wid);
+    if (otherInput) otherInput.value = chain;
+  }
+
+  document.getElementById('hi_' + wid).value = '';
+}
+
+function addManual(wid) {
+  let chain = document.getElementById('m_chain_' + wid).value;
+  if (chain === 'Other') {
+    const customChain = document.getElementById('m_chain_other_' + wid).value.trim();
+    chain = customChain || 'Other';
+  }
+  const date = document.getElementById('m_date_' + wid).value;
+  const token = document.getElementById('m_token_' + wid).value.trim();
+  const usd = document.getElementById('m_usd_' + wid).value;
+  const notes = document.getElementById('m_notes_' + wid).value.trim();
+
+  // Use pending hash captured from paste input
+  const hash = pendingHashes[wid] || '';
+  const url = pendingUrls[wid] || (hash ? explorerUrl(hash, chain) : '');
+
+  if (!date || !usd) {
+    alert('Please fill in at least: Date and USD Value');
+    return;
+  }
+
+  const tx = {
+    id: 'tx_' + Date.now(),
+    hash: hash || '(manual entry)',
+    chain, date,
+    token: token || chain,
+    amount: parseFloat(usd) || 0,
+    usd: parseFloat(usd) || 0,
+    notes,
+    url
+  };
+
+  const w = wallets.find(w => w.id === wid);
+  w.transactions.push(tx);
+  save();
+  renderTxItem(wid, tx);
+  updateWalletCount(wid, w.transactions.length);
+  updateStats();
+
+  // Clear pending hash + hash display
+  delete pendingHashes[wid];
+  delete pendingUrls[wid];
+  const hd = document.getElementById('hd_' + wid);
+  if (hd) { hd.style.display = 'none'; hd.innerHTML = ''; }
+
+  // Clear form
+  ['m_date_', 'm_token_', 'm_usd_', 'm_notes_'].forEach(f => {
+    const el = document.getElementById(f + wid);
+    if (el) el.value = '';
+  });
+
+  const sb = document.getElementById('sb_' + wid);
+  setStatus(sb, 'success', `✓ Transaction added! Total: ${w.transactions.length}`);
+}
+
+function renderTxItem(wid, tx) {
+  const list = document.getElementById('tl_' + wid);
+  const div = document.createElement('div');
+  div.className = 'tx-item';
+  div.id = 'ti_' + tx.id;
+
+  const chainClassMap = {
+    'Ethereum': 'ethereum', 'Tron': 'tron', 'Dogecoin': 'dogecoin',
+    'BNB': 'bnb', 'Solana': 'solana', 'Polygon': 'polygon',
+    'Avalanche': 'avalanche', 'Arbitrum': 'ethereum', 'Optimism': 'ethereum',
+    'Base': 'base', 'XRP': 'xrp', 'Bitcoin': 'bitcoin',
+    'Cardano': 'cardano', 'Kaspa': 'kaspa', 'Fantom': 'fantom',
+    'TON': 'ton', 'TRUMP': 'trump'
+  };
+  const chainClass = 'chain-' + (chainClassMap[tx.chain] || 'unknown');
+  const shortHash = tx.hash.length > 20 ? tx.hash.slice(0, 10) + '...' + tx.hash.slice(-6) : tx.hash;
+  const linkHtml = tx.url ? `<a href="${tx.url}" target="_blank" style="color:var(--accent2); text-decoration:none;">${shortHash}</a>` : shortHash;
+
+  div.innerHTML = `
+    <span class="chain-badge ${chainClass}">${tx.chain}</span>
+    <span class="tx-hash">${linkHtml}</span>
+    <div class="tx-info">
+      <span class="tx-token">${tx.token}</span>
+      <span class="tx-amount">${Number(tx.amount).toLocaleString()}</span>
+      <span class="tx-usd">$${Number(tx.usd).toLocaleString()}</span>
+      <span class="tx-date">${tx.date}</span>
+      <button class="btn btn-danger" onclick="removeTx('${wid}','${tx.id}')">✕</button>
+    </div>
+  `;
+  list.appendChild(div);
+}
+
+function removeTx(wid, txid) {
+  const w = wallets.find(w => w.id === wid);
+  w.transactions = w.transactions.filter(t => t.id !== txid);
+  save();
+  const el = document.getElementById('ti_' + txid);
+  if (el) el.remove();
+  updateWalletCount(wid, w.transactions.length);
+  updateStats();
+}
+
+function setStatus(el, type, msg) {
+  el.className = 'status-bar visible ' + type;
+  el.innerHTML = type === 'loading' 
+    ? `<div class="spinner"></div><span>${msg}</span>`
+    : `<span>${msg}</span>`;
+}
+
+function updateWalletCount(wid, count) {
+  const el = document.getElementById('wc_' + wid);
+  if (el) el.textContent = count + ' txn' + (count !== 1 ? 's' : '');
+  updateLockSummary(wid);
+}
+
+function updateStats() {
+  const allTx = wallets.flatMap(w => w.transactions);
+  const totalUSD = allTx.reduce((s, t) => s + (t.usd || 0), 0);
+  const chains = new Set(allTx.map(t => t.chain)).size;
+
+  document.getElementById('statTxCount').textContent = allTx.length;
+  document.getElementById('statWallets').textContent = wallets.length;
+  document.getElementById('statUSD').textContent = '$' + totalUSD.toLocaleString(undefined, {maximumFractionDigits: 0});
+  document.getElementById('statChains').textContent = chains;
+}
+
+// ============================================================
+// EXCEL HELPERS
+// ============================================================
+function buildWalletSheet(wb, w, wi) {
+  const rows = [];
+  const merges = [];
+  const links = {};
+
+  rows.push([w.name || `Wallet ${wi + 1}`]);
+  merges.push({ s: { r: 0, c: 0 }, e: { r: 0, c: 3 } });
+
+  const addr = w.address || '(no address provided)';
+  rows.push([addr]);
+  merges.push({ s: { r: 1, c: 0 }, e: { r: 1, c: 3 } });
+
+  rows.push(['', '', '', '']);
+  rows.push(['Date', 'Chain', 'Transaction Hash', 'USD Value', 'Notes']);
+
+  const sortedTx = [...w.transactions].sort((a, b) => {
+    const da = a.date ? new Date(a.date) : new Date(0);
+    const db = b.date ? new Date(b.date) : new Date(0);
+    return da - db;
+  });
+
+  sortedTx.forEach((tx, ti) => {
+    const hash = tx.hash || '';
+    const url = tx.url || explorerUrl(hash, tx.chain);
+    rows.push([tx.date || '', tx.chain || '', hash, tx.usd || 0, tx.notes || '']);
+    if (url && url !== '#') links[4 + ti] = url;
+  });
+
+  rows.push(['', '', '', '', '']);
+  const totalUSD = w.transactions.reduce((s, t) => s + (t.usd || 0), 0);
+  const totalRowIdx = rows.length;
+  rows.push(['', '', 'TOTAL SPENT', totalUSD, '']);
+
+  const ws = XLSX.utils.aoa_to_sheet(rows);
+
+  const nameCell = ws['A1'];
+  if (nameCell) nameCell.s = { font: { bold: true, sz: 16, color: { rgb: 'FFFFFF' } }, fill: { fgColor: { rgb: '0a0a30' } }, alignment: { horizontal: 'left', vertical: 'center' } };
+
+  const addrCell = ws['A2'];
+  if (addrCell) addrCell.s = { font: { sz: 10, color: { rgb: '9999bb' }, italic: true }, fill: { fgColor: { rgb: '0a0a30' } }, alignment: { horizontal: 'left' } };
+
+  ['A4','B4','C4','D4','E4'].forEach(ref => {
+    if (ws[ref]) ws[ref].s = { font: { bold: true, color: { rgb: 'FFFFFF' }, sz: 11 }, fill: { fgColor: { rgb: '1a1a40' } }, alignment: { horizontal: 'center' }, border: { bottom: { style: 'thin', color: { rgb: '7b61ff' } } } };
+  });
+
+  // Update merges to span 5 columns
+  merges[0] = { s: { r: 0, c: 0 }, e: { r: 0, c: 4 } };
+  merges[1] = { s: { r: 1, c: 0 }, e: { r: 1, c: 4 } };
+
+  sortedTx.forEach((tx, ti) => {
+    const rowNum = 5 + ti;
+    const hashRef = `C${rowNum}`, usdRef = `D${rowNum}`, dateRef = `A${rowNum}`, chainRef = `B${rowNum}`, notesRef = `E${rowNum}`;
+    const bg = ti % 2 === 0 ? '13131f' : '1a1a28';
+    [dateRef, chainRef, hashRef, usdRef, notesRef].forEach(ref => {
+      if (ws[ref]) ws[ref].s = { font: { sz: 10, color: { rgb: 'e8e8f0' } }, fill: { fgColor: { rgb: bg } }, alignment: { horizontal: ref === usdRef ? 'right' : 'left', wrapText: ref === notesRef } };
+    });
+    const url = links[4 + ti];
+    if (url && ws[hashRef]) {
+      ws[hashRef].l = { Target: url, Tooltip: 'Click to verify on blockchain explorer' };
+      ws[hashRef].s = { ...ws[hashRef].s, font: { sz: 10, color: { rgb: '7b61ff' }, underline: true } };
+    }
+  });
+
+  const totalLabelRef = `C${totalRowIdx + 1}`;
+  const totalValRef = `D${totalRowIdx + 1}`;
+  if (ws[totalLabelRef]) ws[totalLabelRef].s = { font: { bold: true, sz: 12, color: { rgb: '00ff88' } }, fill: { fgColor: { rgb: '0d2b1a' } }, alignment: { horizontal: 'right' } };
+  if (ws[totalValRef]) ws[totalValRef].s = { font: { bold: true, sz: 13, color: { rgb: '00ff88' } }, fill: { fgColor: { rgb: '0d2b1a' } }, alignment: { horizontal: 'right' }, numFmt: '"$"#,##0.00' };
+
+  ws['!cols'] = [{ wch: 14 }, { wch: 14 }, { wch: 70 }, { wch: 16 }, { wch: 35 }];
+  ws['!merges'] = merges;
+
+  let sheetName = (w.name || `Wallet ${wi + 1}`).replace(/[:\\/?*[\]]/g, '').slice(0, 31);
+  let finalName = sheetName;
+  let suffix = 2;
+  while (wb.SheetNames.includes(finalName)) {
+    finalName = sheetName.slice(0, 28) + ` ${suffix++}`;
+  }
+  XLSX.utils.book_append_sheet(wb, ws, finalName);
+  return totalUSD;
+}
+
+// ============================================================
+// GENERATE EXCEL (all wallets + grand total sheet)
+// ============================================================
+function generateExcel() {
+  const hasAny = wallets.some(w => w.transactions.length > 0);
+  if (!hasAny) {
+    alert('No transactions to export yet! Add some transactions first.');
+    return;
+  }
+
+  const wb = XLSX.utils.book_new();
+  let grandTotal = 0;
+  const summaryRows = [];
+
+  wallets.forEach((w, wi) => {
+    if (w.transactions.length === 0) return;
+    const walletTotal = buildWalletSheet(wb, w, wi);
+    grandTotal += walletTotal;
+    summaryRows.push([w.name || `Wallet ${wi + 1}`, w.address || '', w.transactions.length, walletTotal]);
+  });
+
+  // ---- Grand Total Sheet ----
+  const gtRows = [
+    ['GRAND TOTAL SUMMARY'],
+    [''],
+    ['Wallet Name', 'Wallet Address', 'Transactions', 'Total Spent (USD)'],
+    ...summaryRows,
+    [''],
+    ['', '', 'GRAND TOTAL', grandTotal]
+  ];
+
+  const gtWs = XLSX.utils.aoa_to_sheet(gtRows);
+
+  // Style title
+  if (gtWs['A1']) gtWs['A1'].s = { font: { bold: true, sz: 16, color: { rgb: 'FFFFFF' } }, fill: { fgColor: { rgb: '0a0a30' } } };
+
+  // Style headers
+  ['A3','B3','C3','D3'].forEach(ref => {
+    if (gtWs[ref]) gtWs[ref].s = { font: { bold: true, color: { rgb: 'FFFFFF' }, sz: 11 }, fill: { fgColor: { rgb: '1a1a40' } }, alignment: { horizontal: 'center' } };
+  });
+
+  // Style wallet rows
+  summaryRows.forEach((_, i) => {
+    const rowNum = 4 + i;
+    const bg = i % 2 === 0 ? '13131f' : '1a1a28';
+    [`A${rowNum}`,`B${rowNum}`,`C${rowNum}`,`D${rowNum}`].forEach(ref => {
+      if (gtWs[ref]) gtWs[ref].s = { font: { sz: 10, color: { rgb: 'e8e8f0' } }, fill: { fgColor: { rgb: bg } } };
+    });
+  });
+
+  // Grand total row
+  const gtTotalRow = 4 + summaryRows.length + 1;
+  const gtLabelRef = `C${gtTotalRow}`;
+  const gtValRef = `D${gtTotalRow}`;
+  if (gtWs[gtLabelRef]) gtWs[gtLabelRef].s = { font: { bold: true, sz: 13, color: { rgb: '00ff88' } }, fill: { fgColor: { rgb: '0d2b1a' } }, alignment: { horizontal: 'right' } };
+  if (gtWs[gtValRef]) gtWs[gtValRef].s = { font: { bold: true, sz: 14, color: { rgb: '00ff88' } }, fill: { fgColor: { rgb: '0d2b1a' } }, alignment: { horizontal: 'right' }, numFmt: '"$"#,##0.00' };
+
+  gtWs['!cols'] = [{ wch: 25 }, { wch: 50 }, { wch: 16 }, { wch: 20 }];
+  gtWs['!merges'] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: 3 } }];
+
+  XLSX.utils.book_append_sheet(wb, gtWs, 'Grand Total');
+
+  const date = new Date().toISOString().slice(0, 10);
+  XLSX.writeFile(wb, `crypto_presale_${date}.xlsx`);
+}
+
+// ============================================================
+// CLEAR ALL
+// ============================================================
+function clearAll() {
+  if (!confirm('Clear ALL data? This cannot be undone.')) return;
+  localStorage.removeItem('cpTracker');
+  wallets = [];
+  walletCount = 0;
+  document.getElementById('walletsContainer').innerHTML = '';
+  addWallet(false);
+  updateStats();
+}
+
+// ============================================================
+// INIT
+// ============================================================
+load();
+updateStats();
+</script>
+</body>
+</html>
