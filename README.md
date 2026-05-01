@@ -178,4 +178,3 @@ Everything here is from before I even knew what architecture was — the operato
 
 ---
 
-**Apu Saha** — Self-taught infrastructure engineer.
